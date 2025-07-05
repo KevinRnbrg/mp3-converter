@@ -12,26 +12,51 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(levelname)s] %(message)s'
+    format='[%(levelname)s] %(message)s' # colored logs for readability?
 )
 
 dir_name = "audio"
 yt_urls_file = "youtube_urls.txt"
 title_max_length = 56
 
-def download_MP3_file(yt_url):
-    yt_object = YouTube(yt_url) # is successful? Validate URL first and check if create YouTube() works.
-    video_file = get_highest_bitrate_video_from_YT(yt_object)
+def process_user_input(url):
+    yt = create_youtube_object(url)
+    if yt is not None:
+        download_MP3_file(yt)
+        logging.info("Audio file downloaded.") # For looping downloads logs too much clutter
+    else:
+        logging.warning("Skipping download for invalid or unavailable video: %s", url)
+
+def create_youtube_object(url): # what should the function return if validation or object creation fails?
+    # add error handling for RegexMatchError, VideoUnavailable?
+    try:
+        validate_url(url) # currently if this raises exception then it will continue with downloading but it shouldn't
+        yt = YouTube(url)
+        return yt
+    except Exception as e:
+        logging.error("Error occured while creating YouTube object: %s", e)
+
+def download_MP3_file(yt):
+    video_file = get_highest_bitrate_video_from_YT(yt)
     try:
         if not os.path.exists(dir_name):
             os.mkdir(dir_name)
-        write_audio_file_from_video(video_file, yt_object)
+        write_audio_file_from_video(video_file, yt)
     except Exception as e:
-        os.remove(video_file)
-        logging.error("Error during audio file writing: ", e) # needs better handling
+        remove_video_file(video_file)
+        logging.error("Error during audio file writing: %s", e) # needs better handling
     finally:
-        if os.path.exists(video_file):
-            os.remove(video_file)
+        remove_video_file(video_file)
+
+def validate_url(url):
+    parsed_url = urlparse(url)
+    if parsed_url.scheme != "https":
+        raise Exception("Invalid scheme for URL: %s", url)
+    if parsed_url.netloc not in ("www.youtube.com", "youtu.be"):
+        raise Exception("Invalid domain name for URL: %s", url)
+    if parsed_url.path != "/watch":
+        raise Exception("Invalid path for URL: %s", url) # ('Invalid path for URL: %s', 'https:/...') - looks ugly. Fixable?
+    # Use regex for more robustness?
 
 def get_highest_bitrate_video_from_YT(yt_object):
     try:
@@ -39,18 +64,26 @@ def get_highest_bitrate_video_from_YT(yt_object):
         stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
         if not stream:
             raise Exception("No streams found for video.")
+        else:
+            return stream.download(filename='temp_audio.mp4')
     except Exception as e:
-        logging.error("Error during finding stream: " + e)
-    return stream.download(filename='temp_audio.mp4')
+        logging.error("Error during finding stream: %s", e)
 
 def write_audio_file_from_video(video_file, yt_object):
     title = get_formatted_title(yt_object)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(dir_name, mp3_file)
-    with AudioFileClip(video_file) as audio:
+    with AudioFileClip(video_file) as audio: # moviepy and os can throw OSError and IOError, PermissionError?
         audio = AudioFileClip(video_file)
         audio.write_audiofile(output_mp3_path)
         audio.close()
+
+def remove_video_file(video_file):
+    try:
+        if os.path.exists(video_file) and video_file is not None:
+            os.remove(video_file)
+    except (FileNotFoundError, PermissionError, OSError):
+        logging.error("Temporary file removal failed.")
 
 def get_formatted_title(ytObject):
     # doesn't sanitize against invalid characters, truncation to title_max_length and just replacing is simplistic slugging and could lead to duplicates (add counter?)
@@ -63,17 +96,12 @@ if __name__ == "__main__":
     # wrap user input parsing in it's own function - needs validation (ex: non-integer will crash)
     option = int(input("Write 1 for single and 2 for multiple URLs: "))
     if (option == 1):
-        yt_url = input("Paste YouTube link: ") # validate URL (make reusable logic for single and multiple)
-        download_MP3_file(urlparse(yt_url).geturl())
-        logging.info("Audio file downloaded.")
+        url = input("Paste YouTube link: ")
+        process_user_input(url)
     elif (option == 2):
-        # Validate URLs.
-        # Add exception handling per URL to skip and continue on error.
-        # Print or log progress and issues with specific entries.
         with open(yt_urls_file) as file:
             for url in file:
-                download_MP3_file(urlparse(url).geturl())
-        # optimize logic?
-        logging.info("Audio files downloaded.")
+                process_user_input(url)
+        logging.info("Audio files downloaded.") # Logs even if all failed which is misleading. Instead log "Process finished."?
     else:
         logging.info("Unknown command.")
