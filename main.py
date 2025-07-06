@@ -6,6 +6,7 @@
 
 import os
 from pytubefix import YouTube
+import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
 import logging
@@ -23,18 +24,22 @@ def process_user_input(url):
     yt = create_youtube_object(url)
     if yt is not None:
         download_MP3_file(yt)
-        logging.info("Audio file downloaded.") # For looping downloads logs too much clutter
+        logging.info("Audio file downloaded.") # For looping downloads logs too much clutter. MoviePy already logs success.
     else:
         logging.warning("Skipping download for invalid or unavailable video: %s", url)
 
-def create_youtube_object(url): # what should the function return if validation or object creation fails?
-    # add error handling for RegexMatchError, VideoUnavailable?
+def create_youtube_object(url):
     try:
-        validate_url(url) # currently if this raises exception then it will continue with downloading but it shouldn't
+        validate_url(url)
         yt = YouTube(url)
         return yt
+    except exceptions.RegexMatchError:
+        logging.error("URL format in invalid: %s", url)
+    except exceptions.VideoUnavailable:
+        logging.error("Video is unavailable: %s", url)
     except Exception as e:
         logging.error("Error occured while creating YouTube object: %s", e)
+    return None
 
 def download_MP3_file(yt):
     video_file = get_highest_bitrate_video_from_YT(yt)
@@ -56,7 +61,6 @@ def validate_url(url):
         raise Exception("Invalid domain name for URL: %s", url)
     if parsed_url.path != "/watch":
         raise Exception("Invalid path for URL: %s", url) # ('Invalid path for URL: %s', 'https:/...') - looks ugly. Fixable?
-    # Use regex for more robustness?
 
 def get_highest_bitrate_video_from_YT(yt_object):
     try:
@@ -73,7 +77,7 @@ def write_audio_file_from_video(video_file, yt_object):
     title = get_formatted_title(yt_object)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(dir_name, mp3_file)
-    with AudioFileClip(video_file) as audio: # moviepy and os can throw OSError and IOError, PermissionError?
+    with AudioFileClip(video_file) as audio:
         audio = AudioFileClip(video_file)
         audio.write_audiofile(output_mp3_path)
         audio.close()
@@ -93,7 +97,7 @@ def get_formatted_title(ytObject):
     return short_title.replace(" ", "_")
 
 if __name__ == "__main__":
-    # wrap user input parsing in it's own function - needs validation (ex: non-integer will crash)
+    # User input needs validation (ex: non-integer will crash).
     option = int(input("Write 1 for single and 2 for multiple URLs: "))
     if (option == 1):
         url = input("Paste YouTube link: ")
@@ -102,6 +106,6 @@ if __name__ == "__main__":
         with open(yt_urls_file) as file:
             for url in file:
                 process_user_input(url)
-        logging.info("Audio files downloaded.") # Logs even if all failed which is misleading. Instead log "Process finished."?
+        logging.info("Process finished.")
     else:
         logging.info("Unknown command.")
