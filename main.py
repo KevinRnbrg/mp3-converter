@@ -13,7 +13,7 @@ import logging
 
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(levelname)s] %(message)s' # colored logs for readability?
+    format='[%(levelname)s] %(message)s'
 )
 
 dir_name = "audio"
@@ -24,9 +24,24 @@ def process_user_input(url):
     yt = create_youtube_object(url)
     if yt is not None:
         download_MP3_file(yt)
-        logging.info("Audio file downloaded.") # For looping downloads logs too much clutter. MoviePy already logs success.
+        logging.info("Audio file downloaded.")
     else:
         logging.warning("Skipping download for invalid or unavailable video: %s", url)
+
+def download_MP3_file(yt):
+    video_file = get_highest_bitrate_video_from_YT(yt)
+    if video_file is not None:
+        try:
+            if not os.path.exists(dir_name):
+                os.mkdir(dir_name)
+            write_audio_file_from_video(video_file, yt)
+        except Exception as e:
+            remove_video_file(video_file)
+            logging.error("Error during audio file writing: %s", e)
+        finally:
+            remove_video_file(video_file)
+    else:
+        logging.error("Could not find video to process.")
 
 def create_youtube_object(url):
     try:
@@ -41,26 +56,14 @@ def create_youtube_object(url):
         logging.error("Error occured while creating YouTube object: %s", e)
     return None
 
-def download_MP3_file(yt):
-    video_file = get_highest_bitrate_video_from_YT(yt)
-    try:
-        if not os.path.exists(dir_name):
-            os.mkdir(dir_name)
-        write_audio_file_from_video(video_file, yt)
-    except Exception as e:
-        remove_video_file(video_file)
-        logging.error("Error during audio file writing: %s", e) # needs better handling
-    finally:
-        remove_video_file(video_file)
-
 def validate_url(url):
     parsed_url = urlparse(url)
     if parsed_url.scheme != "https":
-        raise Exception("Invalid scheme for URL: %s", url)
+        raise Exception(f"Invalid scheme for URL: {url}")
     if parsed_url.netloc not in ("www.youtube.com", "youtu.be"):
-        raise Exception("Invalid domain name for URL: %s", url)
+        raise Exception(f"Invalid domain name for URL: {url}")
     if parsed_url.path != "/watch":
-        raise Exception("Invalid path for URL: %s", url) # ('Invalid path for URL: %s', 'https:/...') - looks ugly. Fixable?
+        raise Exception(f"Invalid path for URL: {url}")
 
 def get_highest_bitrate_video_from_YT(yt_object):
     try:
@@ -72,6 +75,7 @@ def get_highest_bitrate_video_from_YT(yt_object):
             return stream.download(filename='temp_audio.mp4')
     except Exception as e:
         logging.error("Error during finding stream: %s", e)
+    return None
 
 def write_audio_file_from_video(video_file, yt_object):
     title = get_formatted_title(yt_object)
