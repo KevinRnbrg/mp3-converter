@@ -1,6 +1,5 @@
 # Not testable. No unit-testable functions, no logging, no modularity.
 # Allow running headless (e.g., through command line args, not only input()). Ex: 'main.py -single "https://www.youtube.com/video"', "main.py -multiple C:\Path\to\file"
-# Hardcoded constants (like filename, dir names) instead of config.
 # Group python files in another folder?
 
 import os
