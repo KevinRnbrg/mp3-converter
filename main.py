@@ -1,6 +1,5 @@
 # Everything is globally scoped. No separation between CLI interface, business logic, and I/O. Refactor into at least 3 layers: CLI interface (parsing, I/O), Core logic (convert/download/etc.), Helpers/utilities
 # Not testable. No unit-testable functions, no logging, no modularity.
-# No real logging. No visibility into failures or skipped items. Add logging with levels (info, warning, error) instead of print.
 # Allow running headless (e.g., through command line args, not only input()). Ex: 'main.py -single "https://www.youtube.com/video"', "main.py -multiple C:\Path\to\file"
 # Hardcoded constants (like filename, dir names) instead of config.
 
@@ -9,6 +8,7 @@ from pytubefix import YouTube
 import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
+from slugify import slugify
 import logging
 
 logging.basicConfig(
@@ -94,11 +94,14 @@ def remove_video_file(video_file):
         logging.error("Temporary file removal failed.")
 
 def get_formatted_title(ytObject):
-    # doesn't sanitize against invalid characters, truncation to title_max_length and just replacing is simplistic slugging and could lead to duplicates (add counter?)
-    # use slugify or something similar
     video_title = ytObject.title
-    short_title = video_title[:title_max_length].strip()
-    return short_title.replace(" ", "_")
+    slugified = slugify(
+        video_title, 
+        max_length=title_max_length, 
+        separator="_", 
+        lowercase=False
+    )
+    return slugified
 
 if __name__ == "__main__":
     # User input needs validation (ex: non-integer will crash).
