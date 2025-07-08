@@ -10,13 +10,12 @@ from moviepy import AudioFileClip
 from urllib.parse import urlparse
 import utils
 import logging
+import config
 
 logging.basicConfig(
     level=logging.INFO,
     format='[%(levelname)s] %(message)s'
 )
-
-dir_name = "audio"
 
 def process_user_input(url):
     yt = create_youtube_object(url)
@@ -30,8 +29,8 @@ def download_MP3_file(yt):
     video_file = get_highest_bitrate_video_from_YT(yt)
     if video_file is not None:
         try:
-            if not os.path.exists(dir_name):
-                os.mkdir(dir_name)
+            if not os.path.exists(config.AUDIO_DIR):
+                os.mkdir(config.AUDIO_DIR)
             write_audio_file_from_video(video_file, yt)
         except Exception as e:
             utils.remove_video_file(video_file)
@@ -78,8 +77,6 @@ def get_highest_bitrate_video_from_YT(yt_object):
 def write_audio_file_from_video(video_file, yt_object):
     title = utils.get_formatted_title(yt_object.title)
     mp3_file = title + ".mp3"
-    output_mp3_path = os.path.join(dir_name, mp3_file)
+    output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
     with AudioFileClip(video_file) as audio:
-        audio = AudioFileClip(video_file)
         audio.write_audiofile(output_mp3_path)
-        audio.close()

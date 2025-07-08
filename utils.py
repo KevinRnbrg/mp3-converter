@@ -1,8 +1,7 @@
 from slugify import slugify
 import logging
 import os
-
-title_max_length = 56
+import config
 
 def remove_video_file(video_file):
     try:
@@ -14,7 +13,7 @@ def remove_video_file(video_file):
 def get_formatted_title(title):
     slugified = slugify(
         title, 
-        max_length=title_max_length, 
+        max_length=config.TITLE_MAX_LENGTH, 
         separator="_", 
         lowercase=False
     )
