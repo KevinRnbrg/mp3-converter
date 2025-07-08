@@ -1,0 +1,21 @@
+from slugify import slugify
+import logging
+import os
+
+title_max_length = 56
+
+def remove_video_file(video_file):
+    try:
+        if os.path.exists(video_file) and video_file is not None:
+            os.remove(video_file)
+    except (FileNotFoundError, PermissionError, OSError):
+        logging.error("Temporary file removal failed.")
+
+def get_formatted_title(title):
+    slugified = slugify(
+        title, 
+        max_length=title_max_length, 
+        separator="_", 
+        lowercase=False
+    )
+    return slugified
