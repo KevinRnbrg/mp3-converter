@@ -1,3 +1,5 @@
+# Allow running headless (e.g., through command line args, not only input()). Ex: 'main.py -single "https://www.youtube.com/video"', "main.py -multiple C:\Path\to\file"
+
 from core import process_user_input
 import logging
 import config

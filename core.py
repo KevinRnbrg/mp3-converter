@@ -1,6 +1,6 @@
-# Not testable. No unit-testable functions, no logging, no modularity.
-# Allow running headless (e.g., through command line args, not only input()). Ex: 'main.py -single "https://www.youtube.com/video"', "main.py -multiple C:\Path\to\file"
+# Write tests
 # Group python files in another folder?
+# allow downloading MP3s from YouTube playlists
 
 import os
 from pytubefix import YouTube
@@ -58,8 +58,9 @@ def validate_url(url):
         raise Exception(f"Invalid scheme for URL: {url}")
     if parsed_url.netloc not in ("www.youtube.com", "youtu.be"):
         raise Exception(f"Invalid domain name for URL: {url}")
-    if parsed_url.path != "/watch": # Rigid. YouTube has more varied paths for videos. Add more paths or use regex?
-        raise Exception(f"Invalid path for URL: {url}")
+    if parsed_url.netloc == "www.youtube.com":
+        if parsed_url.path not in ("/watch", "/shorts"):
+            raise Exception(f"Invalid path for URL: {url}")
 
 def get_highest_bitrate_video_from_YT(yt_object):
     try:
