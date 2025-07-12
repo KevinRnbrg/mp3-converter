@@ -7,7 +7,7 @@ from pytubefix import YouTube
 import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
-import utils
+import utils as utils
 import logging
 import config
 
@@ -19,13 +19,13 @@ logging.basicConfig(
 def process_user_input(url):
     yt = create_youtube_object(url)
     if yt is not None:
-        download_MP3_file(yt)
+        download_mp3_file(yt)
         logging.info("Audio file downloaded.")
     else:
         logging.warning("Skipping download for invalid or unavailable video: %s", url)
 
-def download_MP3_file(yt):
-    video_file = get_highest_bitrate_video_from_YT(yt)
+def download_mp3_file(yt):
+    video_file = get_highest_bitrate_video_from_yt(yt)
     if video_file is not None:
         try:
             if not os.path.exists(config.AUDIO_DIR):
@@ -62,7 +62,7 @@ def validate_url(url):
         if parsed_url.path not in ("/watch", "/shorts"):
             raise Exception(f"Invalid path for URL: {url}")
 
-def get_highest_bitrate_video_from_YT(yt_object):
+def get_highest_bitrate_video_from_yt(yt_object):
     try:
         audio_streams = yt_object.streams.filter(only_audio=True)
         stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
