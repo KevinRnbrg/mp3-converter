@@ -1,6 +1,4 @@
 # Write tests
-# Group python files in another folder?
-# allow downloading MP3s from YouTube playlists
 
 import os
 from pytubefix import YouTube
