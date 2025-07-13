@@ -1,5 +1,3 @@
-# Write tests
-
 import os
 from pytubefix import YouTube
 import pytubefix.exceptions as exceptions

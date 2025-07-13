@@ -1,5 +1,3 @@
-# Allow downloading MP3s from YouTube playlists
-
 from core import process_user_input
 import logging
 import config
