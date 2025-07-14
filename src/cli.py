@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--single", help="Set download mode to single. Requires YouTube video link as an argument in quotation marks.")
-    group.add_argument("-m", "--multiple", help="Set download mode to multiple. Reads YouTube video links from youtube_urls.txt.", action="store_true") # for future: Requires path to a .txt file that contains YouTube links separated on individual lines.
+    group.add_argument("-m", "--multiple", help="Set download mode to multiple. Reads YouTube video links from youtube_urls.txt.", action="store_true")
     args = parser.parse_args()
     if args.single:
         process_user_input(args.single)

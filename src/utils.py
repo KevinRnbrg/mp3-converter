@@ -1,7 +1,7 @@
 from slugify import slugify
 import logging
 import os
-import config
+import src.config as config 
 
 def remove_video_file(video_file):
     try:
