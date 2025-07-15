@@ -1,4 +1,4 @@
-from core import process_user_input
+import core
 import logging
 import config
 import argparse
@@ -10,12 +10,12 @@ if __name__ == "__main__":
     group.add_argument("-m", "--multiple", help="Set download mode to multiple. Reads YouTube video links from youtube_urls.txt.", action="store_true")
     args = parser.parse_args()
     if args.single:
-        process_user_input(args.single)
+        core.process_url(args.single)
         logging.info("Process finished.")
     elif args.multiple:
         with open(config.YT_URLS_FILE) as file:
             for url in file:
-                process_user_input(url.strip())
+                core.process_url(url.strip())
         logging.info("Process finished.")
     else:
         parser.print_help()

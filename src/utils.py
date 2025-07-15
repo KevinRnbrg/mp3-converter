@@ -1,7 +1,7 @@
 from slugify import slugify
 import logging
 import os
-import src.config as config 
+import config
 
 def remove_video_file(video_file):
     try:
@@ -10,7 +10,7 @@ def remove_video_file(video_file):
     except (FileNotFoundError, PermissionError, OSError):
         logging.error("Temporary file removal failed.")
 
-def get_formatted_title(title):
+def get_formatted_title(title: str):
     slugified = slugify(
         title, 
         max_length=config.TITLE_MAX_LENGTH, 

@@ -3,36 +3,37 @@ from pytubefix import YouTube
 import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
-import src.utils as utils
+import utils
+import config
 import logging
-import src.config as config
+
 logging.basicConfig(
     level=logging.INFO,
     format='[%(levelname)s] %(message)s'
 )
 
-def process_user_input(url: str):
+def process_url(url: str):
     yt = create_youtube_object(url)
     if yt is not None:
-        download_mp3_file(yt)
-        logging.info("Audio file downloaded.")
+        video_file = download_highest_bitrate_video(yt)
+        if video_file is not None:
+            create_mp3_file(video_file, yt.title)
+            logging.info("Audio file downloaded.")
+        else:
+            logging.error("Could not find video to process.")
     else:
         logging.warning("Skipping download for invalid or unavailable video: %s", url)
 
-def download_mp3_file(yt: YouTube):
-    video_file = get_highest_bitrate_video_from_yt(yt)
-    if video_file is not None:
-        try:
-            if not os.path.exists(config.AUDIO_DIR):
-                os.mkdir(config.AUDIO_DIR)
-            write_audio_file_from_video(video_file, yt)
-        except Exception as e:
-            utils.remove_video_file(video_file)
-            logging.error("Error during audio file writing: %s", e)
-        finally:
-            utils.remove_video_file(video_file)
-    else:
-        logging.error("Could not find video to process.")
+def create_mp3_file(video_file, title):
+    try:
+        if not os.path.exists(config.AUDIO_DIR):
+            os.mkdir(config.AUDIO_DIR)
+        write_audio_file_from_video(video_file, title)
+    except Exception as e:
+        utils.remove_video_file(video_file)
+        logging.error("Error during audio file writing: %s", e)
+    finally:
+        utils.remove_video_file(video_file)
 
 def create_youtube_object(url: str) -> YouTube | None:
     try:
@@ -57,20 +58,20 @@ def validate_url(url: str):
         if parsed_url.path not in ("/watch", "/shorts"):
             raise Exception(f"Invalid path for URL: {url}")
 
-def get_highest_bitrate_video_from_yt(yt_object: YouTube):
+def download_highest_bitrate_video(yt_object: YouTube):
     try:
         audio_streams = yt_object.streams.filter(only_audio=True)
         stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
         if not stream:
             raise Exception("No streams found for video.")
         else:
-            return stream.download(filename='temp_audio.mp4')
+            return stream.download(filename='temp_video.mp4')
     except Exception as e:
         logging.error("Error during finding stream: %s", e)
     return None
 
-def write_audio_file_from_video(video_file, yt_object: YouTube):
-    title = utils.get_formatted_title(yt_object.title)
+def write_audio_file_from_video(video_file, title: str):
+    title = utils.get_formatted_title(title)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
     with AudioFileClip(video_file) as audio:
