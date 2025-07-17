@@ -1,4 +1,4 @@
-import src.utils as utils
+import yt_downloader.utils as utils
 import os
 
 class TestUtils:

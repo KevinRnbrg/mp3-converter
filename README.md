@@ -15,19 +15,23 @@ Convert YouTube videos to MP3 files by providing video URLs.
 
 - **Single download:**
 ```Powershell
-python --single "https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+python yt_downloader --single "https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
 ```
 - **Multiple download:**
 1. Add YouTube URLs (one per line) to `youtube_urls.txt` in the project root.
 2. Run:
 ```Powershell
-python cli.py --multiple
+python yt_downloader --multiple
 ```
 - For help:
 ```Powershell
-python cli.py --help
+python yt_downloader --help
 ```
 **Downloaded `.mp3` files will be saved in the `audio` directory.**
+
+## Testing
+
+To run unit tests run `pytest` in the on the command line.
 
 ## Troubleshooting
 

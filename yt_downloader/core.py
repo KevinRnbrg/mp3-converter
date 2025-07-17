@@ -3,8 +3,8 @@ from pytubefix import YouTube
 import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
-import utils
-import config
+import yt_downloader.utils as utils
+import yt_downloader.config as config
 import logging
 
 logging.basicConfig(

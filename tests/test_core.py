@@ -1,4 +1,4 @@
-import src.core as core
+import yt_downloader.core as core
 import pytest
 from pytubefix import YouTube
 

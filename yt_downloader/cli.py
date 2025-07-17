@@ -1,9 +1,9 @@
-import core
+import yt_downloader.core as core
+import yt_downloader.config as config
 import logging
-import config
 import argparse
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-s", "--single", help="Set download mode to single. Requires YouTube video link as an argument in quotation marks.")
