@@ -29,6 +29,8 @@ python yt_downloader --help
 ```
 **Downloaded `.mp3` files will be saved in the `audio` directory.**
 
+TODO: add usage instructions for shorter command calling (setup.py)
+
 ## Testing
 
 To run unit tests run `pytest` in the on the command line.

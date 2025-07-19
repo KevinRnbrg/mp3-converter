@@ -1,6 +1,5 @@
 import os
 from pytubefix import YouTube
-import pytubefix.exceptions as exceptions
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
 import yt_downloader.utils as utils
@@ -12,65 +11,50 @@ logging.basicConfig(
     format='[%(levelname)s] %(message)s'
 )
 
-def process_url(url: str):
+# For testing assert correct exception rise and are catched and for correct inputs assert nothing goes wrong
+# Everything needs mocking except validate_url in unit tests
+
+def process_url(url: str): # to test this orchestration function mock all methods called to test different paths (success, exceptions)
     yt = create_youtube_object(url)
-    if yt is not None:
-        video_file = download_highest_bitrate_video(yt)
-        if video_file is not None:
-            create_mp3_file(video_file, yt.title)
-            logging.info("Audio file downloaded.")
-        else:
-            logging.error("Could not find video to process.")
-    else:
-        logging.warning("Skipping download for invalid or unavailable video: %s", url)
+    if yt is None:
+        raise ValueError("Invalid or unavailable video")
+    video_file = download_highest_bitrate_video(yt)
+    if video_file is None:
+        raise RuntimeError("Could not find video to process")
+    create_mp3_file(video_file, yt.title)
 
-def create_mp3_file(video_file, title):
-    try:
-        if not os.path.exists(config.AUDIO_DIR):
-            os.mkdir(config.AUDIO_DIR)
-        write_audio_file_from_video(video_file, title)
-    except Exception as e:
-        utils.remove_video_file(video_file)
-        logging.error("Error during audio file writing: %s", e)
-    finally:
-        utils.remove_video_file(video_file)
-
-def create_youtube_object(url: str) -> YouTube | None:
-    try:
-        validate_url(url)
-        yt = YouTube(url)
-        return yt
-    except exceptions.RegexMatchError:
-        logging.error("URL format in invalid: %s", url)
-    except exceptions.VideoUnavailable:
-        logging.error("Video is unavailable: %s", url)
-    except Exception as e:
-        logging.error("Error occured while creating YouTube object: %s", e)
-    return None
+def create_youtube_object(url: str) -> YouTube:
+    validate_url(url)
+    return YouTube(url)
 
 def validate_url(url: str):
     parsed_url = urlparse(url)
     if parsed_url.scheme != "https":
-        raise Exception(f"Invalid scheme for URL: {url}")
+        raise ValueError(f"Invalid scheme for URL: {url}")
     if parsed_url.netloc not in ("www.youtube.com", "youtu.be"):
-        raise Exception(f"Invalid domain name for URL: {url}")
+        raise ValueError(f"Invalid domain name for URL: {url}")
     if parsed_url.netloc == "www.youtube.com":
         if parsed_url.path not in ("/watch", "/shorts"):
-            raise Exception(f"Invalid path for URL: {url}")
+            raise ValueError(f"Invalid path for URL: {url}")
 
-def download_highest_bitrate_video(yt_object: YouTube):
+def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_video.mp4'): # Mock yt.object.streams.filter and stream.download methods for testing
+    audio_streams = yt_object.streams.filter(only_audio=True)
+    if not audio_streams:
+        raise RuntimeError("No audio streams foudn for video.")
+    stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
+    if not stream:
+        raise RuntimeError("No streams found for video.")
+    return stream.download(filename=temp_file)
+
+def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
     try:
-        audio_streams = yt_object.streams.filter(only_audio=True)
-        stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
-        if not stream:
-            raise Exception("No streams found for video.")
-        else:
-            return stream.download(filename='temp_video.mp4')
-    except Exception as e:
-        logging.error("Error during finding stream: %s", e)
-    return None
+        if not os.path.exists(config.AUDIO_DIR):
+            os.mkdir(config.AUDIO_DIR)
+        write_audio_file_from_video(video_file, title)
+    finally:
+        utils.remove_video_file(video_file)
 
-def write_audio_file_from_video(video_file, title: str):
+def write_audio_file_from_video(video_file, title: str): # Mock AudioFileClip and file system. Assert call for audio.write_audiofile with the correct path.
     title = utils.get_formatted_title(title)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
