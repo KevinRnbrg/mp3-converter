@@ -8,8 +8,8 @@ Convert YouTube videos to MP3 files by providing video URLs.
 ## Setup
 
 1. Clone this repository
-2. (Optional) Create and activate a virtual environment: `venv\Scripts\activate`.
-3. Install dependencies: `pip install`.
+2. Create and activate a virtual environment: `venv\Scripts\activate`.
+3. Install dependencies: `pip install -r requirements.txt`.
 
 ## Usage
 
