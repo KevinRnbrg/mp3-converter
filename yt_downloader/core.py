@@ -18,11 +18,14 @@ def process_url(url: str, isVideo: bool): # to test this orchestration function 
     yt = create_youtube_object(url)
     if yt is None:
         raise ValueError("Invalid or unavailable video")
-    video_file = download_highest_bitrate_video_audio(yt)
+    if isVideo:
+        video_file = download_highest_bitrate_video(yt)
+    else:
+        video_file = download_highest_bitrate_audio(yt)
     if video_file is None:
         raise RuntimeError("Could not find video to process")
     if isVideo:
-        create_mp4_file(video_file, yt.title)
+        change_mp4_location(video_file)
     else:
         create_mp3_file(video_file, yt.title)
 
@@ -40,7 +43,7 @@ def validate_url(url: str):
         if parsed_url.path not in ("/watch", "/shorts"):
             raise ValueError(f"Invalid path for URL: {url}")
 
-def download_highest_bitrate_video_audio(yt_object: YouTube, temp_file: str = 'temp_video.mp4'): # Mock yt.object.streams.filter and stream.download methods for testing
+def download_highest_bitrate_audio(yt_object: YouTube, temp_file: str = 'temp_video.mp4'): # Mock yt.object.streams.filter and stream.download methods for testing
     audio_streams = yt_object.streams.filter(only_audio=True)
     if not audio_streams:
         raise RuntimeError("No audio streams found for video.")
@@ -48,6 +51,17 @@ def download_highest_bitrate_video_audio(yt_object: YouTube, temp_file: str = 't
     if not max_quality_stream:
         raise RuntimeError("No streams found for video.")
     return max_quality_stream.download(filename=temp_file)
+
+def download_highest_bitrate_video(yt_object: YouTube):
+    video_streams = yt_object.streams.filter(progressive=True)
+    for s in video_streams:
+        print(s, getattr(s, 'resolution', 'no res'))
+    if not video_streams:
+        raise RuntimeError("No video streams found for video.")
+    max_quality_stream = max(video_streams, key=lambda s: int(s.itag))
+    if not max_quality_stream:
+        raise RuntimeError("No streams found for video.")
+    return max_quality_stream.download(filename=YouTube.title)
 
 def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
     try:
@@ -64,7 +78,7 @@ def write_audio_file_from_video(video_file, title: str): # Mock AudioFileClip an
     with AudioFileClip(video_file) as audio:
         audio.write_audiofile(output_mp3_path)
 
-def create_mp4_file(video_file, title):
+def change_mp4_location(video_file):
     if not os.path.exists(config.VIDEO_DIR):
         os.mkdir(config.VIDEO_DIR)
     os.path.join(config.VIDEO_DIR, video_file)
