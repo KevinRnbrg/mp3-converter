@@ -54,11 +54,9 @@ def download_highest_bitrate_audio(yt_object: YouTube, temp_file: str = 'temp_vi
 
 def download_highest_bitrate_video(yt_object: YouTube):
     video_streams = yt_object.streams.filter(progressive=True)
-    for s in video_streams:
-        print(s, getattr(s, 'resolution', 'no res'))
     if not video_streams:
         raise RuntimeError("No video streams found for video.")
-    max_quality_stream = max(video_streams, key=lambda s: int(s.itag))
+    max_quality_stream = max(video_streams, key=lambda s: int(s.resolution.replace('p', '')))
     if not max_quality_stream:
         raise RuntimeError("No streams found for video.")
     return max_quality_stream.download(filename=YouTube.title)
