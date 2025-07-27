@@ -18,10 +18,12 @@ def process_url(url: str, isVideo: bool): # to test this orchestration function 
     yt = create_youtube_object(url)
     if yt is None:
         raise ValueError("Invalid or unavailable video")
+    
     if isVideo:
         video_file = download_highest_bitrate_video(yt)
     else:
         video_file = download_highest_bitrate_audio(yt)
+
     if video_file is None:
         raise RuntimeError("Could not find video to process")
     if isVideo:
@@ -59,7 +61,8 @@ def download_highest_bitrate_video(yt_object: YouTube):
     max_quality_stream = max(video_streams, key=lambda s: int(s.resolution.replace('p', '')))
     if not max_quality_stream:
         raise RuntimeError("No streams found for video.")
-    return max_quality_stream.download(filename=YouTube.title)
+    video_title = yt_object.title + ".mp4"
+    return max_quality_stream.download(filename=video_title)
 
 def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
     try:
