@@ -1,11 +1,5 @@
 from setuptools import setup, find_packages
 
-requirements = []
-with open("requirements.txt", "r") as file:
-    for requirement in file:
-        if requirement.strip() and not requirement.startswith("#") and not requirement.startswith("//"):
-            requirements.append(requirement)
-
 setup(
     name="yt_downloader",
     version="0.1",

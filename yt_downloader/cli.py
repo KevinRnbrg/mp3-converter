@@ -1,7 +1,8 @@
-import yt_downloader.core as core
-import yt_downloader.config as config
-import logging
 import argparse
+import logging
+
+from .config import YT_URLS_FILE
+from .core import process_url
 
 # Write unit tests (file reading, looping, error handling). Use mocks if necessary.
 
@@ -14,14 +15,14 @@ def main():
     if args.single:
         process_single_url(args.single)
     elif args.multiple:
-        process_multiple_urls(config.YT_URLS_FILE)
+        process_multiple_urls(YT_URLS_FILE)
         logging.info("Process finished.")
     else:
         parser.print_help()
 
 def process_single_url(url):
     try:
-        core.process_url(url.strip())
+        process_url(url.strip())
     except Exception as e:
         logging.error(e)
     logging.info("Process finished.")
