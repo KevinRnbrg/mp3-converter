@@ -17,18 +17,11 @@ logging.basicConfig(
 def process_url(url: str, isVideo: bool): # to test this orchestration function mock all methods called to test different paths (success, exceptions)
     yt = create_youtube_object(url)
     if yt is None:
-        raise ValueError("Invalid or unavailable video")
-    
+        raise ValueError("Invalid or unavailable video.")
     if isVideo:
         video_file = download_highest_bitrate_video(yt)
     else:
         video_file = download_highest_bitrate_audio(yt)
-
-    if video_file is None:
-        raise RuntimeError("Could not find video to process")
-    if isVideo:
-        change_mp4_location(video_file)
-    else:
         create_mp3_file(video_file, yt.title)
 
 def create_youtube_object(url: str) -> YouTube:
@@ -52,7 +45,10 @@ def download_highest_bitrate_audio(yt_object: YouTube, temp_file: str = 'temp_vi
     max_quality_stream = max(audio_streams, key=lambda s: int(s.abr.replace('kbps', '')))
     if not max_quality_stream:
         raise RuntimeError("No streams found for video.")
-    return max_quality_stream.download(filename=temp_file)
+    video_file = max_quality_stream.download(filename=temp_file)
+    if video_file is None:
+        raise RuntimeError("Could not find video to process")
+    return video_file
 
 def download_highest_bitrate_video(yt_object: YouTube):
     video_streams = yt_object.streams.filter(progressive=True)
@@ -62,24 +58,28 @@ def download_highest_bitrate_video(yt_object: YouTube):
     if not max_quality_stream:
         raise RuntimeError("No streams found for video.")
     video_title = yt_object.title + ".mp4"
-    return max_quality_stream.download(filename=video_title)
+    video_path = mp4_path()
+    video_file = max_quality_stream.download(video_path, filename=video_title)
+    if video_file is None:
+        raise RuntimeError("Could not find video to process")
+    return video_file
 
 def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
-    try:
-        if not os.path.exists(config.AUDIO_DIR):
-            os.mkdir(config.AUDIO_DIR)
-        write_audio_file_from_video(video_file, title)
-    finally:
-        utils.remove_video_file(video_file)
+    if not os.path.exists(config.AUDIO_DIR):
+        os.mkdir(config.AUDIO_DIR)
+    write_audio_file_from_video(video_file, title)
 
 def write_audio_file_from_video(video_file, title: str): # Mock AudioFileClip and file system. Assert call for audio.write_audiofile with the correct path.
     title = utils.get_formatted_title(title)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
-    with AudioFileClip(video_file) as audio:
-        audio.write_audiofile(output_mp3_path)
+    try:
+        with AudioFileClip(video_file) as audio:
+            audio.write_audiofile(output_mp3_path)
+    finally:
+        utils.remove_video_file(video_file)
 
-def change_mp4_location(video_file):
+def mp4_path():
     if not os.path.exists(config.VIDEO_DIR):
         os.mkdir(config.VIDEO_DIR)
-    os.path.join(config.VIDEO_DIR, video_file)
+    return config.VIDEO_DIR
