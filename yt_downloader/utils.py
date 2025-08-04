@@ -1,6 +1,8 @@
-from slugify import slugify
-import yt_downloader.config as config
 import os
+
+from slugify import slugify
+
+from .config import TITLE_MAX_LENGTH
 
 # Write tests
 
@@ -14,7 +16,7 @@ def remove_video_file(video_file): # Mock os.path.exists, os.remove
 def get_formatted_title(title: str):
     slugified = slugify(
         title, 
-        max_length=config.TITLE_MAX_LENGTH,
+        max_length=TITLE_MAX_LENGTH,
         separator="_", 
         lowercase=False
     )

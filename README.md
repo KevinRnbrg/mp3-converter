@@ -2,10 +2,13 @@
 Convert YouTube videos to MP3 files by providing video URLs.
 
 ## Prerequisites
-- Python 3.8 or higher
+- Python 3.9 or higher (right python version?)
 - (Recommended) [virtual environment](https://docs.python.org/3/library/venv.html)
 
-## Setup
+## Quick Setup
+1. Run `pip install git+https://github.com/KevinRnbrg/mp3-converter.git`
+
+## Development Setup
 
 1. Clone this repository
 2. Create a virtual environment with `python -m venv venv` and activate it with `venv\Scripts\activate`
@@ -16,17 +19,17 @@ Convert YouTube videos to MP3 files by providing video URLs.
 
 - **Single download:**
 ```Powershell
-python yt_downloader --single "https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+yt_downloader --single "https://www.youtube.com/watch?v=7QU1nvuxaMA"
 ```
 - **Multiple download:**
 1. Add YouTube URLs (one per line) to `youtube_urls.txt` in the project root.
 2. Run:
 ```Powershell
-python yt_downloader --multiple
+yt_downloader --multiple
 ```
-- For help:
+- For help and info on options:
 ```Powershell
-python yt_downloader --help
+yt_downloader --help
 ```
 **Downloaded `.mp3` files will be saved in the `audio` directory.**
 

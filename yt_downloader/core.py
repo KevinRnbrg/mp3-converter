@@ -1,10 +1,12 @@
-import os
-from pytubefix import YouTube
-from moviepy import AudioFileClip
-from urllib.parse import urlparse
-import yt_downloader.utils as utils
-import yt_downloader.config as config
 import logging
+import os
+from urllib.parse import urlparse
+
+from moviepy import AudioFileClip
+from pytubefix import YouTube
+
+from .config import AUDIO_DIR
+from .utils import get_formatted_title, remove_video_file
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,15 +50,15 @@ def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_vi
 
 def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
     try:
-        if not os.path.exists(config.AUDIO_DIR):
-            os.mkdir(config.AUDIO_DIR)
+        if not os.path.exists(AUDIO_DIR):
+            os.mkdir(AUDIO_DIR)
         write_audio_file_from_video(video_file, title)
     finally:
-        utils.remove_video_file(video_file)
+        remove_video_file(video_file)
 
 def write_audio_file_from_video(video_file, title: str): # Mock AudioFileClip and file system. Assert call for audio.write_audiofile with the correct path.
-    title = utils.get_formatted_title(title)
+    title = get_formatted_title(title)
     mp3_file = title + ".mp3"
-    output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
+    output_mp3_path = os.path.join(AUDIO_DIR, mp3_file)
     with AudioFileClip(video_file) as audio:
         audio.write_audiofile(output_mp3_path)
