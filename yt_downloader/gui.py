@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import Button
 from tkinterdnd2 import DND_TEXT, TkinterDnD
 import requests
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageOps
 from io import BytesIO
 
 
@@ -54,19 +54,64 @@ class GUI(TkinterDnD.Tk):
         self.image_label = tk.Label(self, image=self.img_tk)
         self.image_label.place(relx=0.5, rely=0.5, anchor='center')
 
+    def validate_url(self, url):
+        """Validate if URL is a valid YouTube link."""
+        pattern = r'https?://(www\.)?(youtube\.com|youtu\.be)/'
+        return bool(re.match(pattern, url.strip()))
+
+    def extract_video_id(self, url):
+        """Extract the YouTube video ID from the URL."""
+        pattern = r'(?:v=|\/)([0-9A-Za-z_-]{11}).*'
+        match = re.search(pattern, url)
+        return match.group(1) if match else None
+
+    def fetch_thumbnail(self, url):
+        """Fetch the thumbnail image from YouTube given a URL."""
+        video_id = self.extract_video_id(url)
+        if not video_id:
+            return None
+        thumbnail_url = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+        try:
+            response = requests.get(thumbnail_url)
+            response.raise_for_status()
+            img = Image.open(BytesIO(response.content))
+            img = img.resize((160, 90))  # Resize as needed
+            return ImageTk.PhotoImage(img)
+        except Exception as e:
+            print(f"Failed to fetch thumbnail: {e}")
+            return None
+
+    def fetch_video_title(self, url):
+        """Fetch video title using YouTube oEmbed API."""
+        oembed_url = f"https://www.youtube.com/oembed?url={url}&format=json"
+        try:
+            response = requests.get(oembed_url)
+            response.raise_for_status()
+            data = response.json()
+            return data.get("title", "Unknown Title")
+        except Exception as e:
+            print(f"Failed to fetch video title: {e}")
+            return "Unknown Title"
+
     def add_entry(self, url):
         url = url.strip()
 
-        # Validate YouTube URL format
-        if not re.match(r'https?://(www\.)?(youtube\.com|youtu\.be)/', url):
+        if not self.validate_url(url):
             self.show_notification("Invalid YouTube URL.")
             return
 
-        # Create and pack entry frame
         item_frame = tk.Frame(self.entry_container)
         item_frame.pack(fill='x', pady=2)
 
-        label = tk.Label(item_frame, text=url, anchor='w')
+        # Fetch thumbnail and add it if available
+        thumbnail_photo = self.fetch_thumbnail(url)
+        if thumbnail_photo:
+            thumb_label = tk.Label(item_frame, image=thumbnail_photo)
+            thumb_label.image = thumbnail_photo  # Keep a reference!
+            thumb_label.pack(side='left', padx=(0, 5))
+
+        title = self.fetch_video_title(url)
+        label = tk.Label(item_frame, text=title, anchor='w')
         label.pack(side='left', fill='x', expand=True)
 
         delete_btn = tk.Button(item_frame, text="❌",
@@ -75,8 +120,10 @@ class GUI(TkinterDnD.Tk):
 
         self.entries.append(item_frame)
 
+        # Hide image_label if at least one entry exists
         if self.entries and self.image_label.winfo_ismapped():
             self.image_label.place_forget()
+
         # Feedback
         winsound.PlaySound("yt_downloader/assets/drop.wav",
                            winsound.SND_FILENAME | winsound.SND_ASYNC)
