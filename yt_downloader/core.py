@@ -2,8 +2,8 @@ import os
 from pytubefix import YouTube
 from moviepy import AudioFileClip
 from urllib.parse import urlparse
-import yt_downloader.utils as utils
-import yt_downloader.config as config
+import utils as utils
+import config as config
 import logging
 
 logging.basicConfig(
@@ -14,7 +14,8 @@ logging.basicConfig(
 # For testing assert correct exception rise and are catched and for correct inputs assert nothing goes wrong
 # Everything needs mocking except validate_url in unit tests
 
-def process_url(url: str): # to test this orchestration function mock all methods called to test different paths (success, exceptions)
+
+def process_url(url: str):  # to test this orchestration function mock all methods called to test different paths (success, exceptions)
     yt = create_youtube_object(url)
     if yt is None:
         raise ValueError("Invalid or unavailable video")
@@ -23,9 +24,11 @@ def process_url(url: str): # to test this orchestration function mock all method
         raise RuntimeError("Could not find video to process")
     create_mp3_file(video_file, yt.title)
 
+
 def create_youtube_object(url: str) -> YouTube:
     validate_url(url)
     return YouTube(url)
+
 
 def validate_url(url: str):
     parsed_url = urlparse(url)
@@ -37,7 +40,9 @@ def validate_url(url: str):
         if parsed_url.path not in ("/watch", "/shorts"):
             raise ValueError(f"Invalid path for URL: {url}")
 
-def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_video.mp4'): # Mock yt.object.streams.filter and stream.download methods for testing
+
+# Mock yt.object.streams.filter and stream.download methods for testing
+def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_video.mp4'):
     audio_streams = yt_object.streams.filter(only_audio=True)
     if not audio_streams:
         raise RuntimeError("No audio streams foudn for video.")
@@ -46,7 +51,9 @@ def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_vi
         raise RuntimeError("No streams found for video.")
     return stream.download(filename=temp_file)
 
-def create_mp3_file(video_file, title): # mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
+
+# mock file system operations and write_audio_file_from_video (creates the dir, calls writer, always removes video file)
+def create_mp3_file(video_file, title):
     try:
         if not os.path.exists(config.AUDIO_DIR):
             os.mkdir(config.AUDIO_DIR)
@@ -54,7 +61,9 @@ def create_mp3_file(video_file, title): # mock file system operations and write_
     finally:
         utils.remove_video_file(video_file)
 
-def write_audio_file_from_video(video_file, title: str): # Mock AudioFileClip and file system. Assert call for audio.write_audiofile with the correct path.
+
+# Mock AudioFileClip and file system. Assert call for audio.write_audiofile with the correct path.
+def write_audio_file_from_video(video_file, title: str):
     title = utils.get_formatted_title(title)
     mp3_file = title + ".mp3"
     output_mp3_path = os.path.join(config.AUDIO_DIR, mp3_file)
