@@ -6,6 +6,9 @@ import winsound
 import tkinter as tk
 from tkinter import Button
 from tkinterdnd2 import DND_TEXT, TkinterDnD
+import requests
+from PIL import Image, ImageTk
+from io import BytesIO
 
 
 class GUI(TkinterDnD.Tk):
@@ -13,6 +16,7 @@ class GUI(TkinterDnD.Tk):
         super().__init__()
         self.title(title)
         self.geometry(window_size)
+        self.minsize(300, 500)
         self.entries = []  # Stores all entry frames
         self.create_widgets()
 
@@ -43,6 +47,13 @@ class GUI(TkinterDnD.Tk):
         self.quit_btn = Button(self, text="Quit", command=self.quit)
         self.quit_btn.pack(pady=10)
 
+        img = Image.open("yt_downloader/assets/dndicon.png")
+        img = img.resize((200, 200))
+
+        self.img_tk = ImageTk.PhotoImage(img)
+        self.image_label = tk.Label(self, image=self.img_tk)
+        self.image_label.place(relx=0.5, rely=0.5, anchor='center')
+
     def add_entry(self, url):
         url = url.strip()
 
@@ -64,6 +75,8 @@ class GUI(TkinterDnD.Tk):
 
         self.entries.append(item_frame)
 
+        if self.entries and self.image_label.winfo_ismapped():
+            self.image_label.place_forget()
         # Feedback
         winsound.PlaySound("yt_downloader/assets/drop.wav",
                            winsound.SND_FILENAME | winsound.SND_ASYNC)
@@ -73,6 +86,9 @@ class GUI(TkinterDnD.Tk):
         item_frame.destroy()
         if item_frame in self.entries:
             self.entries.remove(item_frame)
+        if not self.entries:
+            # Show the image again if no entries are left
+            self.image_label.place(relx=0.5, rely=0.5, anchor='center')
 
     def on_drop(self, event):
         data = event.data.strip()
