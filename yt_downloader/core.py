@@ -26,7 +26,7 @@ def process_url(url: str, isVideo: bool): # to test this orchestration function 
 
 def create_youtube_object(url: str) -> YouTube:
     validate_url(url)
-    return YouTube(url)
+    return YouTube(url, 'ANDROID')
 
 def validate_url(url: str):
     parsed_url = urlparse(url)
