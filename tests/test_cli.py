@@ -22,7 +22,7 @@ class TestMain:
         with patch.object(sys, "argv", ["yt_downloader", "-s", "  https://youtube.com/watch?v=1  "]):
             with patch("yt_downloader.cli.config") as mock_config:
                 cli.main()
-        mock_process_single.assert_called_once_with("  https://youtube.com/watch?v=1  ")
+        mock_process_single.assert_called_once_with("  https://youtube.com/watch?v=1  ", video=False)
 
     @patch("yt_downloader.cli._log_completion")
     @patch("yt_downloader.cli.process_single_url")
@@ -46,7 +46,7 @@ class TestMain:
             with patch("yt_downloader.cli.config") as mock_config:
                 mock_config.YT_URLS_FILE = "/path/to/urls.txt"
                 cli.main()
-        mock_process_multiple.assert_called_once_with("/path/to/urls.txt")
+        mock_process_multiple.assert_called_once_with("/path/to/urls.txt", video=False)
         mock_log_completion.assert_called_once_with(single=False)
 
 
@@ -57,7 +57,7 @@ class TestProcessSingleUrl:
         mock_process_url: MagicMock,
     ) -> None:
         cli.process_single_url("  https://youtube.com/watch?v=1  ")
-        mock_process_url.assert_called_once_with("https://youtube.com/watch?v=1")
+        mock_process_url.assert_called_once_with("https://youtube.com/watch?v=1", video=False)
 
     @patch("yt_downloader.cli.core.process_url")
     def test_process_single_url_catches_invalid_url_error_and_logs(
@@ -91,8 +91,8 @@ class TestProcessMultipleUrls:
         url_file.write_text("https://youtube.com/watch?v=1\nhttps://youtube.com/watch?v=2\n", encoding="utf-8")
         cli.process_multiple_urls(str(url_file))
         assert mock_process_single.call_count == 2
-        mock_process_single.assert_any_call("https://youtube.com/watch?v=1")
-        mock_process_single.assert_any_call("https://youtube.com/watch?v=2")
+        mock_process_single.assert_any_call("https://youtube.com/watch?v=1", video=False)
+        mock_process_single.assert_any_call("https://youtube.com/watch?v=2", video=False)
 
     def test_process_multiple_urls_missing_file_logs_error(
         self,

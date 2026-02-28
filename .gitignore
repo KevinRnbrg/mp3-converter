@@ -176,6 +176,7 @@ cython_debug/
 
 # project-specific files
 /audio
+/video
 
 # Editor / IDE
 *.swp
