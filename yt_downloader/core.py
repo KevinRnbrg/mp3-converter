@@ -9,10 +9,13 @@ from yt_downloader.exceptions import InvalidURLError, DownloadError
 # For testing assert correct exception rise and are catched and for correct inputs assert nothing goes wrong
 # Everything needs mocking except validate_url in unit tests
 
-def process_url(url: str) -> None:
+def process_url(url: str, *, video: bool = False) -> None:
     yt = create_youtube_object(url)
     if yt is None:
         raise DownloadError("Invalid or unavailable video")
+    if video:
+        download_video_mp4(yt)
+        return
     video_file = download_highest_bitrate_video(yt)
     if video_file is None:
         raise DownloadError("Could not find video to process")
@@ -40,6 +43,26 @@ def download_highest_bitrate_video(yt_object: YouTube, temp_file: str = 'temp_vi
     if not stream:
         raise DownloadError("No streams found for video.")
     return stream.download(filename=temp_file)
+
+def _resolution_height(stream) -> int:
+    """Parse resolution string (e.g. '720p') to height in pixels for sorting."""
+    res = getattr(stream, "resolution", None) or ""
+    if not res or not res.endswith("p"):
+        return 0
+    try:
+        return int(res[:-1])
+    except ValueError:
+        return 0
+
+def download_video_mp4(yt_object: YouTube) -> str:
+    progressive_streams = yt_object.streams.filter(progressive=True)
+    if not progressive_streams:
+        raise DownloadError("No progressive video streams found.")
+    stream = max(progressive_streams, key=_resolution_height)
+    if not os.path.exists(config.VIDEO_DIR):
+        os.mkdir(config.VIDEO_DIR)
+    filename = utils.get_formatted_title(yt_object.title) + ".mp4"
+    return stream.download(output_path=config.VIDEO_DIR, filename=filename)
 
 def create_mp3_file(video_file: str, title: str) -> None:
     try:

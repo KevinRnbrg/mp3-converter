@@ -65,7 +65,64 @@ class TestDownloadHighestBitrateVideo:
             core.download_highest_bitrate_video(mock_yt)
 
 
-class TestCreateMp3File:
+class TestResolutionHeight:
+    def test_resolution_height_720p(self) -> None:
+        mock_stream = MagicMock()
+        mock_stream.resolution = "720p"
+        assert core._resolution_height(mock_stream) == 720
+
+    def test_resolution_height_360p(self) -> None:
+        mock_stream = MagicMock()
+        mock_stream.resolution = "360p"
+        assert core._resolution_height(mock_stream) == 360
+
+    def test_resolution_height_empty_returns_zero(self) -> None:
+        mock_stream = MagicMock()
+        mock_stream.resolution = ""
+        assert core._resolution_height(mock_stream) == 0
+
+    def test_resolution_height_missing_returns_zero(self) -> None:
+        mock_stream = MagicMock(spec=[])  # no resolution attr
+        assert core._resolution_height(mock_stream) == 0
+
+
+class TestDownloadVideoMp4:
+    @patch("yt_downloader.core.utils.get_formatted_title")
+    @patch("yt_downloader.core.os.mkdir")
+    @patch("yt_downloader.core.os.path.exists")
+    def test_download_video_mp4_success(
+        self,
+        mock_exists: MagicMock,
+        mock_mkdir: MagicMock,
+        mock_get_formatted_title: MagicMock,
+    ) -> None:
+        mock_exists.return_value = False
+        mock_get_formatted_title.return_value = "My_Video"
+        mock_stream = MagicMock()
+        mock_stream.resolution = "720p"
+        mock_stream.download.return_value = "/video/My_Video.mp4"
+        mock_streams = MagicMock()
+        mock_streams.filter.return_value = [mock_stream]
+        mock_yt = MagicMock()
+        mock_yt.streams = mock_streams
+        mock_yt.title = "My Video"
+        with patch("yt_downloader.core.config") as mock_config:
+            mock_config.VIDEO_DIR = "/video"
+            result = core.download_video_mp4(mock_yt)
+        mock_mkdir.assert_called_once()
+        mock_get_formatted_title.assert_called_once_with("My Video")
+        mock_stream.download.assert_called_once_with(
+            output_path="/video", filename="My_Video.mp4"
+        )
+        assert result == "/video/My_Video.mp4"
+
+    def test_download_video_mp4_no_progressive_streams(self) -> None:
+        mock_streams = MagicMock()
+        mock_streams.filter.return_value = []
+        mock_yt = MagicMock()
+        mock_yt.streams = mock_streams
+        with pytest.raises(DownloadError, match="No progressive video streams found"):
+            core.download_video_mp4(mock_yt)
     @patch("yt_downloader.core.utils.remove_video_file")
     @patch("yt_downloader.core.write_audio_file_from_video")
     @patch("yt_downloader.core.os.path.exists")
@@ -135,6 +192,45 @@ class TestProcessUrl:
         mock_download.return_value = "/tmp/temp_video.mp4"
         core.process_url(valid_youtube_url)
         mock_create_yt.assert_called_once_with(valid_youtube_url)
+        mock_download.assert_called_once_with(mock_yt)
+        mock_create_mp3.assert_called_once_with("/tmp/temp_video.mp4", "My Video")
+
+    @patch("yt_downloader.core.download_video_mp4")
+    @patch("yt_downloader.core.create_mp3_file")
+    @patch("yt_downloader.core.download_highest_bitrate_video")
+    @patch("yt_downloader.core.create_youtube_object")
+    def test_process_url_video_true_calls_download_video_mp4_only(
+        self,
+        mock_create_yt: MagicMock,
+        mock_download_audio: MagicMock,
+        mock_create_mp3: MagicMock,
+        mock_download_video: MagicMock,
+        valid_youtube_url: str,
+    ) -> None:
+        mock_yt = MagicMock()
+        mock_yt.title = "My Video"
+        mock_create_yt.return_value = mock_yt
+        core.process_url(valid_youtube_url, video=True)
+        mock_create_yt.assert_called_once_with(valid_youtube_url)
+        mock_download_video.assert_called_once_with(mock_yt)
+        mock_download_audio.assert_not_called()
+        mock_create_mp3.assert_not_called()
+
+    @patch("yt_downloader.core.create_mp3_file")
+    @patch("yt_downloader.core.download_highest_bitrate_video")
+    @patch("yt_downloader.core.create_youtube_object")
+    def test_process_url_video_false_uses_audio_path(
+        self,
+        mock_create_yt: MagicMock,
+        mock_download: MagicMock,
+        mock_create_mp3: MagicMock,
+        valid_youtube_url: str,
+    ) -> None:
+        mock_yt = MagicMock()
+        mock_yt.title = "My Video"
+        mock_create_yt.return_value = mock_yt
+        mock_download.return_value = "/tmp/temp_video.mp4"
+        core.process_url(valid_youtube_url, video=False)
         mock_download.assert_called_once_with(mock_yt)
         mock_create_mp3.assert_called_once_with("/tmp/temp_video.mp4", "My Video")
 
