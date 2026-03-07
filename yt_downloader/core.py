@@ -6,9 +6,6 @@ import yt_downloader.utils as utils
 import yt_downloader.config as config
 from yt_downloader.exceptions import InvalidURLError, DownloadError
 
-# For testing assert correct exception rise and are catched and for correct inputs assert nothing goes wrong
-# Everything needs mocking except validate_url in unit tests
-
 def process_url(url: str, *, video: bool = False) -> None:
     yt = create_youtube_object(url)
     if yt is None:
